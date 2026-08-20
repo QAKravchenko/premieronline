@@ -25,9 +25,9 @@ export class Homepage {
 
         this.page = page;
 
-        this.comingEventLink = page.locator('.uk-card-body .uk-card-title uk-margin-small-bottom a');
+        this.comingEventLink = page.locator('h2.uk-card-title');
 
-        this.registerOnEventButton = page.locator('a.uk-button uk-button-default', { hasText: 'Register' });
+        this.registerOnEventButton = page.locator('a.uk-button-default'); // Register button
 
         this.selectSportDropdown = page.locator('#txt_cat');
 

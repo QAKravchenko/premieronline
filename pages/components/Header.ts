@@ -67,7 +67,6 @@ export class Header {
         this.registerButton = page.locator('.uk-navbar-item a .uk-button', { hasText: 'Create Account' });
 
         this.initialUrl = page.url();
-        
     }
 
 

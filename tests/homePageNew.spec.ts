@@ -9,7 +9,7 @@ test.describe('Check homePage elements', () => {
         header = new Header(page);
         homepage = new Homepage(page);
         await homepage.open();
-        await expect(page).toHaveURL('https://www.premieronline.com/');
+        await expect(page).toHaveURL('/');
         await expect(page).toHaveTitle('Premier Online - leading provider of online event registration for sports events');
     })
 
@@ -25,9 +25,10 @@ test.describe('Check homePage elements', () => {
         await header.clickRatings();
     });
 
-    /*test('Check helpLink displayig and works corretly', async () => {
+    /* BUG
+    test('Check helpLink displayig and works corretly', async () => {
         await header.clickHelp();
-    });*/
+    });*/ 
     
     test('Check languageLink displayig and works corretly', async () => {
         await header.clickLanguage();

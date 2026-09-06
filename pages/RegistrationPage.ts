@@ -13,6 +13,8 @@ export class RegistrationPage {
 
     readonly page: Page;
 
+    readonly header: Header;
+
     readonly emailField: Locator;
 
     readonly firstNameField: Locator;
@@ -43,9 +45,7 @@ export class RegistrationPage {
 
     readonly errorMessageDifferentPasswords: Locator;
 
-    readonly header: Header;
-
-
+    
 
     constructor(page: Page) {
 

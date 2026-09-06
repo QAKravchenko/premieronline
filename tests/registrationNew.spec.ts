@@ -6,7 +6,7 @@ import { RegistrationPage } from "../pages/RegistrationPage";
 test.describe('Check registration', () => {
     let header: Header;
     let registrationPage: RegistrationPage;
-    const emailData = 'qa@gmail.com';
+    const emailData = 'qakravchenko@gmail.com';
     const firstNameData = 'QA';
     const lastNameData = 'Test';
     const passwordData = 'testing1';
@@ -44,6 +44,10 @@ test.describe('Check registration', () => {
                 repeatPassword: repeatPasswordData
             });
         })
+
+        await test.step('Click on Continue button', async () => {
+            await registrationPage.clickContinueButton();
+        });
 
         await test.step('Check successful message', async () => {
             await registrationPage.checkSuccessfulRegistration(successfulMessage);

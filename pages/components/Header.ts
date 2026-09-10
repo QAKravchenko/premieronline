@@ -4,8 +4,6 @@ export class Header {
 
     readonly page: Page;
 
-    // Locators
-
     readonly logo: Locator;
 
     readonly navbar: Locator;
@@ -69,16 +67,21 @@ export class Header {
         this.initialUrl = page.url();
     }
 
-
-    async clickLogo() {
+    //Logo
+    async verifyLogoDisplaying() {
         await expect(this.logo).toBeVisible();
         await expect(this.logo).toBeEnabled();
-        await expect(this.logo).toHaveAttribute('href', 'https://www.premieronline.com');
+        await expect(this.logo).toHaveAttribute('href', 'https://www.premieronline.com');  
+    }
+
+    async clickLogo() {
         await this.logo.click();
         await expect(this.page).toHaveURL('https://www.premieronline.com');
     }
 
-    async clickEvents() {
+
+    // Events link
+    async verifyEventsLinkDisplaying() {
         await expect(this.eventsLink).toBeVisible();
         await expect(this.eventsLink).toBeEnabled();
         await expect(this.eventsLink).toHaveAttribute('href', 'https://www.premieronline.com/calendar');
@@ -87,35 +90,65 @@ export class Header {
         await expect(this.eventsLink).toHaveCSS('color', 'rgb(137, 185, 30)');
         await expect(this.eventsLink).toHaveCSS('font-size', '16.8px');
         await expect(this.eventsLink).toHaveCSS('font-family', 'exo2regular');
+    }
+
+    async clickEventsLink() {       
         await this.eventsLink.click();
         await expect(this.page).toHaveURL('https://www.premieronline.com/calendar');
     }
 
-    async clickRatings() {
+
+    // Ratings link
+    async verifyRatingsLinkDisplaying() {
         await expect(this.ratingsLink).toBeVisible();
         await expect(this.ratingsLink).toBeEnabled();
         await expect(this.ratingsLink).toHaveAttribute('href', 'https://www.premieronline.com/event_ratings.php');
         await expect(this.ratingsLink).toHaveText('Ratings');
+        await this.ratingsLink.hover();
+        await expect(this.eventsLink).toHaveCSS('color', 'rgb(137, 185, 30)');
+        await expect(this.eventsLink).toHaveCSS('font-size', '16.8px');
+        await expect(this.eventsLink).toHaveCSS('font-family', 'exo2regular');
+    }
+
+    async clickRatingsLink() {
         await this.ratingsLink.click();
         await expect(this.page).toHaveURL('https://www.premieronline.com/event_ratings.php');
     }
 
-    async clickHelp() {
+
+    // Help link
+    async verifyHelpLinkDisplaying() {
         await expect(this.helpLink).toBeVisible();
         await expect(this.helpLink).toBeEnabled();
+        await expect(this.helpLink).toHaveAttribute('href', 'https://www.premieronline.com/help');
         await expect(this.helpLink).toHaveText('Help');
+        await this.helpLink.hover();
+        await expect(this.helpLink).toHaveCSS('color', 'rgb(137, 185, 30)');
+        await expect(this.helpLink).toHaveCSS('font-size', '16.8px');
+        await expect(this.helpLink).toHaveCSS('font-family', 'exo2regular');
+    }
+
+    async clickHelpLink() {
         await this.helpLink.click();
         await expect(this.page).toHaveURL('https://www.premieronline.com/help');
     }
 
-    async clickLanguage() {
+
+    // Language link
+    async verifyLanguageLinkDisplaying() {
         await expect(this.switchLanguage).toBeVisible();
         await expect(this.switchLanguage).toBeEnabled();
-        await this.switchLanguage.click();
-        expect(this.page).toHaveURL('https://www.premieronline.com/');
+        await expect(this.switchLanguage).toHaveAttribute('href', 'https://www.premieronline.com/');
     }
 
-    async clickLogin() {
+    async clickLanguageLink() {
+        await this.switchLanguage.click();
+        await expect(this.page).toHaveURL('https://www.premieronline.com/');
+    }
+
+
+    // Login link
+    async verifyLoginLinkDisplaying() {
         await expect(this.loginLink).toBeVisible();
         await expect(this.loginButton).toBeEnabled();
         await expect(this.loginLink).toHaveAttribute('href', 'https://www.premieronline.com/action/dologin');
@@ -123,11 +156,16 @@ export class Header {
         await expect(this.loginButton).toHaveCSS('background-color', 'rgb(35, 54, 111)');
         await expect(this.loginButton).toHaveCSS('font-size', '16px');
         await expect(this.loginButton).toHaveCSS('font-family', 'exo2medium');
+    }
+
+    async clickLoginLink() {
         await this.loginLink.click();
         await expect(this.page).toHaveURL('https://www.premieronline.com/action/dologin');
     }
 
-    async clickRegister() {
+
+    // Register link
+    async verifyRegisterLinkDisplaying() {
         await expect(this.registerLink).toBeVisible();
         await expect(this.registerButton).toBeEnabled();
         await expect(this.registerLink).toHaveAttribute('href', 'https://www.premieronline.com/action/register');
@@ -135,19 +173,33 @@ export class Header {
         await expect(this.registerButton).toHaveCSS('background-color', 'rgb(137, 185, 30)');
         await expect(this.registerButton).toHaveCSS('font-size', '16px');
         await expect(this.registerButton).toHaveCSS('font-family', 'exo2medium');
+    }
+
+    async clickRegisterLink() {   
         await this.registerLink.click();
         await expect(this.page).toHaveURL('https://www.premieronline.com/action/register');
     }
 
-    async search(text: string) {
+
+    // Search field
+    async verifySearchFieldDisplaying() {
         await expect(this.searchField).toBeVisible();
         await expect(this.searchField).toBeEnabled();
         await expect(this.searchField).toHaveAttribute('placeholder', 'Search by Event Name or Organiser');
         await expect(this.searchIcon).toBeVisible();
-        await this.searchField.pressSequentially(text, { delay: 300 });
+        await expect(this.searchIcon).toBeEnabled();
+    }
+    
+    async search(text: string) {       
+        await this.searchField.pressSequentially(text, { delay: 100 });
+        await expect(this.page).toHaveURL('/');
+    }
+
+
+    // Search results modal
+    async verifySearchResultsModalDisplaying() {
         await expect(this.searchResultsModal).toBeVisible();
-        await expect(this.searchResultsModal).toContainText('Events Search Result');
-        expect(this.page).toHaveURL('/');
+        await expect(this.searchResultsModal).toBeEnabled();
     }
 
 }

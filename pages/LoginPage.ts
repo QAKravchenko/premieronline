@@ -1,12 +1,12 @@
 import { expect, Locator, Page } from '@playwright/test';
 import { Header } from './components/Header';
 
-export interface AuthenticationData {
+export interface LoginData {
     email: string;
     password: string;
 }
 
-export class AuthenticationPage {
+export class LoginPage {
 
     readonly page: Page;
 
@@ -37,6 +37,7 @@ export class AuthenticationPage {
     readonly registerGuestLink: Locator;
 
 
+
     constructor(page: Page) {
 
         this.page = page;
@@ -45,9 +46,9 @@ export class AuthenticationPage {
 
         this.emailField = page.locator('#login_name');
 
-        this.passwordField = page.locator('[name="password"]');
+        this.passwordField = page.locator('#password');
 
-        this.signInButton = page.locator('button', { hasText: 'Sign in' });
+        this.signInButton = page.locator('button.uk-button-large', { hasText: 'Sign in' });
 
         this.eyeIconFirst = page.locator('#eyeIcon').first();
 
@@ -61,7 +62,7 @@ export class AuthenticationPage {
 
         this.forgotPasswordLink = page.locator('a[href*="forgot_password"]');
 
-        this.createAccountLink = page.locator('a[href*="register"]');
+        this.createAccountLink = page.locator('.uk-width-1-2 a[href*="register"]');
 
         this.registerGuestLink = page.locator('a[href*="guest_add_create.php"]');
 
@@ -69,15 +70,22 @@ export class AuthenticationPage {
     
     };
 
-    async authenticate(data: AuthenticationData): Promise<void> {
-        await this.emailField.fill(data.email);
-        await this.passwordField.fill(data.password);
-        await expect(this.emailField).toHaveValue(data.email);
-        await expect(this.passwordField).toHaveValue(data.password);
+    //Login form elements verification
+    async verifyLoginPageElements(): Promise<void> {
         await this.checkSignInTitle();
         await this.checkEmailField();
         await this.checkPasswordField();
         await this.checkSignInButton();
+        await this.checkForgotPasswordLink();
+        await this.checkCreateAccountLink();
+        await this.checkRegisterGuestLink();
+    }
+
+    async login(data: LoginData): Promise<void> {
+        await this.emailField.fill(data.email);
+        await this.passwordField.fill(data.password);
+        await expect(this.emailField).toHaveValue(data.email);
+        await expect(this.passwordField).toHaveValue(data.password);
     }
 
     async checkSignInTitle() {
@@ -114,24 +122,44 @@ export class AuthenticationPage {
         await this.signInButton.click();
     }
 
+
+    //Forgot your password? link 
     async checkForgotPasswordLink() {
         await expect(this.forgotPasswordLink).toBeVisible();
         await expect(this.forgotPasswordLink).toBeEnabled();
         await expect(this.forgotPasswordLink).toHaveText('Forgot your password?');
     }
 
+    async clickForgotPasswordLink() {
+        await this.forgotPasswordLink.click();
+    }
+
+
+    //Create an account link 
     async checkCreateAccountLink() {
         await expect(this.createAccountLink).toBeVisible();
         await expect(this.createAccountLink).toBeEnabled();
-        await expect(this.createAccountLink).toHaveText('Create an account');
+        await expect(this.createAccountLink).toHaveText('Create Account');
     }
 
+    async clickCreateAccountLink() {
+        await this.createAccountLink.click();
+    }
+
+
+    //Register as a guest link
     async checkRegisterGuestLink() {
         await expect(this.registerGuestLink).toBeVisible();
         await expect(this.registerGuestLink).toBeEnabled();
-        await expect(this.registerGuestLink).toHaveText('Register as a guest');
+        await expect(this.registerGuestLink).toHaveText('Register as a Guest');
     }
 
+    async clickRegisterGuestLink() {
+        await this.registerGuestLink.click();
+    }
+    
+
+    // Error messages verification
     async checkErrorMessageEmptyEmailField() {
         await expect(this.errorMessageEmptyEmailField).toBeVisible();
         await expect(this.errorMessageEmptyEmailField).toBeEnabled();

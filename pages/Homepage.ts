@@ -1,6 +1,6 @@
 import { expect, Locator, Page } from '@playwright/test'
 
-export class Homepage {
+export class HomePage {
 
     readonly page: Page;
 

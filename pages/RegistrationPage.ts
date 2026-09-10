@@ -1,5 +1,6 @@
 import { expect, Locator, Page } from '@playwright/test';
 import { Header } from './components/Header';
+import { BaseActions } from '../config/BaseActions';
 
 export interface RegistrationData {
     email: string;
@@ -9,9 +10,7 @@ export interface RegistrationData {
     repeatPassword: string;
 }
 
-export class RegistrationPage {
-
-    readonly page: Page;
+export class RegistrationPage extends BaseActions {
 
     readonly header: Header;
 
@@ -49,7 +48,7 @@ export class RegistrationPage {
 
     constructor(page: Page) {
 
-        this.page = page;
+        super(page);
 
         this.emailField = page.locator('#email');
 
@@ -67,7 +66,7 @@ export class RegistrationPage {
 
         this.continueButton = page.locator('button[type="submit"]');
 
-        this.checkYourEmailMessageBlock = page.locator('uk-alert-success');
+        this.checkYourEmailMessageBlock = page.locator('.uk-alert-success');
 
         this.errorMessageEmptyEmailField = page.locator('.uk-alert-danger').filter({ hasText: 'Please enter your email address.' });
 
@@ -86,122 +85,105 @@ export class RegistrationPage {
     }
 
     async checkPasswordVisibilityToggle() {
-        await expect(this.passwordField).toHaveAttribute('type', 'password');
-        await this.eyeIconFirst.click();
-        await expect(this.passwordField).toHaveAttribute('type', 'text');
-        await expect(this.repeatPasswordField).toHaveAttribute('type', 'password');
-        await this.eyeIconLast.click();
-        await expect(this.repeatPasswordField).toHaveAttribute('type', 'text');
+        await this.checkAttribute(this.passwordField, 'type', 'password', 'Password Field');
+        await this.click(this.eyeIconFirst, 'First Eye Icon');
+        await this.checkAttribute(this.passwordField, 'type', 'text', 'Password Field');
+        await this.checkAttribute(this.repeatPasswordField, 'type', 'password', 'Repeat Password Field');
+        await this.click(this.eyeIconLast, 'Last Eye Icon');
+        await this.checkAttribute(this.repeatPasswordField, 'type', 'text', 'Repeat Password Field');
     }
 
     async register(data: RegistrationData): Promise<void> {
-        await this.emailField.fill(data.email);
-        await this.firstNameField.fill(data.firstName);
-        await this.lastNameField.fill(data.lastName);
-        await this.passwordField.fill(data.password);
-        await this.repeatPasswordField.fill(data.repeatPassword);
-        await expect(this.emailField).toHaveValue(data.email);
-        await expect(this.firstNameField).toHaveValue(data.firstName);
-        await expect(this.lastNameField).toHaveValue(data.lastName);
-        await expect(this.passwordField).toHaveValue(data.password);
-        await expect(this.repeatPasswordField).toHaveValue(data.repeatPassword);
+        await this.fill(this.emailField, data.email, 'Email Field');
+        await this.fill(this.firstNameField, data.firstName, 'First Name Field');
+        await this.fill(this.lastNameField, data.lastName, 'Last Name Field');
+        await this.fill(this.passwordField, data.password, 'Password Field');
+        await this.fill(this.repeatPasswordField, data.repeatPassword, 'Repeat Password Field');
+        
+        await this.checkValue(this.emailField, data.email, 'Email Field');
+        await this.checkValue(this.firstNameField, data.firstName, 'First Name Field');
+        await this.checkValue(this.lastNameField, data.lastName, 'Last Name Field');
+        await this.checkValue(this.passwordField, data.password, 'Password Field');
+        await this.checkValue(this.repeatPasswordField, data.repeatPassword, 'Repeat Password Field');
         await this.clickContinueButton();
     }
 
     async checkEmailField() {
-        await expect(this.emailField).toBeVisible();
-        await expect(this.emailField).toBeEnabled();
-        await expect(this.emailField).toHaveAttribute('placeholder', 'Email: we send your confirmations and receipts here.');
-        //await (this.emailField).fill(email);
-        //await expect(this.emailField).toHaveValue();
+        await this.checkIsVisible(this.emailField, 'Email Field');
+        await this.checkIsEnabled(this.emailField, 'Email Field');
+        await this.checkAttribute(this.emailField, 'placeholder', 'Email: we send your confirmations and receipts here.', 'Email Field');
     }
 
     async checkFirstNameField() {
-        await expect(this.firstNameField).toBeVisible();
-        await expect(this.firstNameField).toBeEnabled();
-        await expect(this.firstNameField).toHaveAttribute('placeholder', 'First Name');
-        //await (this.firstNameField).fill(firstName);
-        //await expect(this.firstNameField).toHaveValue(firstName);
+        await this.checkIsVisible(this.firstNameField, 'First Name Field');
+        await this.checkIsEnabled(this.firstNameField, 'First Name Field');
+        await this.checkAttribute(this.firstNameField, 'placeholder', 'First Name', 'First Name Field');
     }
 
     async checkLastNameField() {
-        await expect(this.lastNameField).toBeVisible();
-        await expect(this.lastNameField).toBeEnabled();
-        await expect(this.lastNameField).toHaveAttribute('placeholder', 'Last Name');
-        //await (this.lastNameField).fill(lastName);
-        //await expect(this.lastNameField).toHaveValue(lastName);
+        await this.checkIsVisible(this.lastNameField, 'Last Name Field');
+        await this.checkIsEnabled(this.lastNameField, 'Last Name Field');
+        await this.checkAttribute(this.lastNameField, 'placeholder', 'Last Name', 'Last Name Field');
     }
 
    
     async checkPasswordField() {
-        await expect(this.passwordField).toBeVisible();
-        await expect(this.passwordField).toBeEnabled();
-        await expect(this.passwordField).toHaveAttribute('placeholder', 'Password (8 characters alphanumeric)');
-        //await (this.passwordField).fill(password);
-        //await expect(this.passwordField).toHaveValue(password);
-        //await expect(this.passwordField).toHaveAttribute('type', 'password');
-        //await this.eyeIconFirst.click();
-        //await expect(this.passwordField).toHaveAttribute('type', 'text');
+        await this.checkIsVisible(this.passwordField, 'Password Field');
+        await this.checkIsEnabled(this.passwordField, 'Password Field');
+        await this.checkAttribute(this.passwordField, 'placeholder', 'Password (8 characters alphanumeric)', 'Password Field');
     }
 
     async checkRepeatPasswordField() {
-        await expect(this.repeatPasswordField).toBeVisible();
-        await expect(this.repeatPasswordField).toBeEnabled();
-        await expect(this.repeatPasswordField).toHaveAttribute('placeholder', 'Repeat Password');
-        //await (this.repeatPasswordField).fill(repeatPassword);
-        //await expect(this.repeatPasswordField).toHaveValue(repeatPassword);
-        //await expect(this.repeatPasswordField).toHaveAttribute('type', 'password');
-        //await this.eyeIconLast.click();
-        //await expect(this.repeatPasswordField).toHaveAttribute('type', 'text');
+        await this.checkIsVisible(this.repeatPasswordField, 'Repeat Password Field');
+        await this.checkIsEnabled(this.repeatPasswordField, 'Repeat Password Field');
+        await this.checkAttribute(this.repeatPasswordField, 'placeholder', 'Repeat Password', 'Repeat Password Field');
     }
 
     async clickContinueButton() {
-        await expect(this.continueButton).toBeVisible();
-        await expect(this.continueButton).toBeEnabled();
-        await expect(this.continueButton).toHaveAttribute('type', 'submit');
-        await this.continueButton.click();
+        await this.checkAttribute(this.continueButton, 'type', 'submit', 'Continue Button');
+        await this.click(this.continueButton, 'Continue Button');
     }    
 
     async checkSuccessfulRegistration(value: string) {    
-        await expect(this.page).toHaveURL('https://www.premieronline.com/create_profile.php');
-        await expect(this.checkYourEmailMessageBlock).toBeVisible();
-        await expect(this.checkYourEmailMessageBlock).toBeEnabled();
-        await expect(this.checkYourEmailMessageBlock).toHaveText(value);
+        await this.checkUrl('https://www.premieronline.com/create_profile.php');
+        await this.checkIsVisible(this.checkYourEmailMessageBlock, 'Check Your Email Message Block');
+        await this.checkIsEnabled(this.checkYourEmailMessageBlock, 'Check Your Email Message Block');
+        await this.checkExactText(this.checkYourEmailMessageBlock, value, 'Check Your Email Message Block');
     }
 
     async checkErrorMessageEmptyEmailField() {
-        await expect(this.errorMessageEmptyEmailField).toBeVisible();
-        await expect(this.errorMessageEmptyEmailField).toBeEnabled();
-        await expect(this.errorMessageEmptyEmailField).toContainText('Please enter your email address.');
+        await this.checkIsVisible(this.errorMessageEmptyEmailField, 'Error Message Empty Email Field');
+        await this.checkIsEnabled(this.errorMessageEmptyEmailField, 'Error Message Empty Email Field');
+        await this.checkText(this.errorMessageEmptyEmailField, 'Please enter your email address.', 'Error Message Empty Email Field');
     }
 
     async checkErrorMessageIncorrectEmailField() {
-        await expect(this.errorMessageIncorrectEmailField).toBeVisible();
-        await expect(this.errorMessageIncorrectEmailField).toBeEnabled();
-        await expect(this.errorMessageIncorrectEmailField).toContainText('Your email address is incorrect.');
+        await this.checkIsVisible(this.errorMessageIncorrectEmailField, 'Error Message Incorrect Email Field');
+        await this.checkIsEnabled(this.errorMessageIncorrectEmailField, 'Error Message Incorrect Email Field');
+        await this.checkText(this.errorMessageIncorrectEmailField, 'Your email address is incorrect.', 'Error Message Incorrect Email Field');
     }
 
     async checkErrorMessageEmptyFirstNameField() {
-        await expect(this.errorMessageFirstNameField).toBeVisible();
-        await expect(this.errorMessageFirstNameField).toBeEnabled();
-        await expect(this.errorMessageFirstNameField).toContainText('Please enter your first name.');
+        await this.checkIsVisible(this.errorMessageFirstNameField, 'Error Message Empty First Name Field');
+        await this.checkIsEnabled(this.errorMessageFirstNameField, 'Error Message Empty First Name Field');
+        await this.checkText(this.errorMessageFirstNameField, 'Please enter your first name.', 'Error Message Empty First Name Field');
     }
 
     async checkErrorMessageEmptyLastNameField() {
-        await expect(this.errorMessageLastNameField).toBeVisible();
-        await expect(this.errorMessageLastNameField).toBeEnabled();
-        await expect(this.errorMessageLastNameField).toContainText('Please enter your last name.');
+        await this.checkIsVisible(this.errorMessageLastNameField, 'Error Message Empty Last Name Field');
+        await this.checkIsEnabled(this.errorMessageLastNameField, 'Error Message Empty Last Name Field');
+        await this.checkText(this.errorMessageLastNameField, 'Please enter your last name.', 'Error Message Empty Last Name Field');
     }
 
     async checkErrorMessageEmptyPasswordField() {
-        await expect(this.errorMessagePasswordField).toBeVisible();
-        await expect(this.errorMessagePasswordField).toBeEnabled();
-        await expect(this.errorMessagePasswordField).toContainText('Please enter a password.');
+        await this.checkIsVisible(this.errorMessagePasswordField, 'Error Message Empty Password Field');
+        await this.checkIsEnabled(this.errorMessagePasswordField, 'Error Message Empty Password Field');
+        await this.checkText(this.errorMessagePasswordField, 'Please enter a password.', 'Error Message Empty Password Field');
     }
 
     async checkErrorMessageDifferentPasswords() {
-        await expect(this.errorMessageDifferentPasswords).toBeVisible();
-        await expect(this.errorMessageDifferentPasswords).toBeEnabled();
-        await expect(this.errorMessageDifferentPasswords).toContainText("Your passwords don't match.");
+        await this.checkIsVisible(this.errorMessageDifferentPasswords, 'Error Message Different Passwords');
+        await this.checkIsEnabled(this.errorMessageDifferentPasswords, 'Error Message Different Passwords');
+        await this.checkText(this.errorMessageDifferentPasswords, "Your passwords don't match.", 'Error Message Different Passwords');
     }
 }

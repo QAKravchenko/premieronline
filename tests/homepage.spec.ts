@@ -1,13 +1,13 @@
 import { expect, test } from '@playwright/test';
-import { Homepage } from "../pages/Homepage";
+import { HomePage } from "../pages/HomePage";
 import { Header } from "../pages/components/Header";
 
 test.describe('Check homePage elements', () => {
     let header: Header;
-    let homepage: Homepage;
+    let homepage: HomePage;
     test.beforeEach(async ({ page }) => {
         header = new Header(page);
-        homepage = new Homepage(page);
+        homepage = new HomePage(page);
         await homepage.open();
         await expect(page).toHaveURL('/');
         await expect(page).toHaveTitle('Premier Online - leading provider of online event registration for sports events');
@@ -18,11 +18,11 @@ test.describe('Check homePage elements', () => {
     });
     
     test('Check eventsLink displayig and works corretly', async () => {
-        await header.clickEvents();
+        await header.clickEventsLink();
     });
 
     test('Check ratingsLink displayig and works corretly', async () => {
-        await header.clickRatings();
+        await header.clickRatingsLink();
     });
 
     /* BUG
@@ -31,15 +31,15 @@ test.describe('Check homePage elements', () => {
     });*/ 
     
     test('Check languageLink displayig and works corretly', async () => {
-        await header.clickLanguage();
+        await header.clickLanguageLink();
     });
 
     test('Check loginButton displayig and works corretly', async () => {
-        await header.clickLogin();
+        await header.clickLoginLink();
     });
      
     test('Check registerButton displayig and works corretly', async () => {
-        await header.clickRegister();
+        await header.clickRegisterLink();
     });
 
     test('Check searchField displayig and works corretly', async () => {

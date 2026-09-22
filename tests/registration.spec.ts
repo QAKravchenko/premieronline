@@ -50,7 +50,7 @@ test.describe('Check registration', () => {
             await registrationPage.checkSuccessfulRegistration(successfulMessage);
         });
 
-        // Дописать кейс на проверку аватарки и имени пользователя после успешной регистрации, если это возможно в рамках теста.
+        // Дописать кейс на проверку аватарки и имени пользователя после успешной регистрации, если это возможно в рамках теста. И дописать тест на проверку наличия ссылки Sign out
     });
 
     test('NEGATIVE - Check registration with empty fields', async () => {

@@ -17,6 +17,7 @@ test.describe('Check authentication', () => {
         await expect(page).toHaveURL('https://www.premieronline.com/action/dologin');
     });
 
+    
     test('Check initial state of elements on the authentication page', async () => {
         await test.step('Verify all form fields are present', async () => {
             await loginPage.checkSignInTitle();

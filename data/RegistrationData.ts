@@ -1,4 +1,5 @@
 import { generateRegistrationData } from '../helpers/DataGenerator';
+import { registrationCredentials } from './Credentials';
 
 const dynamicData = generateRegistrationData();
 
@@ -8,3 +9,5 @@ export const lastNameData = dynamicData.lastName;
 export const passwordData = dynamicData.password;
 export const repeatPasswordData = dynamicData.repeatPassword;
 export const successfulMessage = "Please check your email for your Activation Button. Click it and you'll come right back here and be able to start registering immediately.";
+
+export { registrationCredentials };

@@ -10,3 +10,7 @@ node_modules/
 # Credentials
 data/Credentials.ts
 data/credentials.ts
+
+# Allure
+/allure-results/
+/allure-report/

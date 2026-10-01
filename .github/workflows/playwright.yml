@@ -18,6 +18,16 @@ jobs:
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
     - name: Run Playwright tests
+      env:
+        LOGIN_EMAIL: ${{ vars.LOGIN_EMAIL }}
+        LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
+        REGISTRATION_EMAIL: ${{ vars.REGISTRATION_EMAIL }}
+        REGISTRATION_FIRST_NAME: ${{ vars.REGISTRATION_FIRST_NAME }}
+        REGISTRATION_LAST_NAME: ${{ vars.REGISTRATION_LAST_NAME }}
+        REGISTRATION_PASSWORD: ${{ secrets.REGISTRATION_PASSWORD }}
+        REGISTRATION_REPEAT_PASSWORD: ${{ secrets.REGISTRATION_REPEAT_PASSWORD }}
+        API_USERNAME: ${{ vars.API_USERNAME }}
+        API_PASSWORD: ${{ secrets.API_PASSWORD }}
       run: npx playwright test
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}

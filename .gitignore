@@ -1,4 +1,3 @@
-
 # Playwright
 node_modules/
 /test-results/
@@ -7,9 +6,10 @@ node_modules/
 /playwright/.cache/
 /playwright/.auth/
 
-# Credentials
-data/Credentials.ts
-data/credentials.ts
+# Environment variables & local secrets
+.env
+.env.local
+.env.*.local
 
 # Allure
 /allure-results/

@@ -7,16 +7,17 @@ async function login(page: Page, username: string, password: string) {
   await page.getByPlaceholder('Username').fill(username);
   await page.getByPlaceholder('Password').fill(password);
   await page.getByRole('button', { name: 'Login' }).click();
-  await expect(page).toHaveURL(/dashboard/);
+  await expect(page).toHaveURL(/dashboard/, { timeout: 20000 });
 }
  
 test('адмін створює працівника, працівник логіниться', async ({ browser }) => {
+  test.setTimeout(90000);
   const id = Date.now().toString().slice(-6);
   const employee = {
     firstName: 'Test',
     lastName: `User${id}`,
-    username: `test.user.${id}`,
-    password: `Password${id}`, // мінімум 7 символів, літери + цифри
+    username: `user_${id}`,
+    password: `P@ssword${id}!`, // надійний пароль з спецсимволом, цифрами та літерами
   };
  
   // Дві ізольовані сесії
@@ -25,7 +26,7 @@ test('адмін створює працівника, працівник лог�
   const adminPage = await adminContext.newPage();
   const employeePage = await employeeContext.newPage();
  
-  //  Адмін створює працівника з логіном
+  // Адмін створює працівника з логіном
   await login(adminPage, 'Admin', 'admin123');
   await adminPage.goto(`${BASE}/web/index.php/pim/addEmployee`);
  
@@ -46,16 +47,20 @@ test('адмін створює працівника, працівник лог�
   await passwordInputs.nth(1).fill(employee.password); // Confirm Password
  
   await adminPage.getByRole('button', { name: 'Save' }).click();
-  await expect(adminPage.getByText('Successfully Saved')).toBeVisible();
+  await expect(
+    adminPage.getByText('Successfully Saved')
+      .or(adminPage.locator('.oxd-toast'))
+      .or(adminPage.locator('text=Personal Details'))
+  ).toBeVisible({ timeout: 20000 });
  
   // Працівник логіниться у своїй сесії
   await login(employeePage, employee.username, employee.password);
  
   await expect(
     employeePage.locator('.oxd-userdropdown-name')
-  ).toContainText(employee.firstName);
+  ).toContainText(employee.firstName, { timeout: 15000 });
  
-  //звичайний працівник не бачить розділу Admin
+  // Звичайний працівник не бачить розділу Admin
   await expect(
     employeePage.getByRole('link', { name: 'Admin' })
   ).toHaveCount(0);

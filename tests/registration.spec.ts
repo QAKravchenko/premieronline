@@ -28,6 +28,8 @@ test.describe('Check registration', () => {
     });
 
     test('POSITIVE - Check successful registration', async () => {
+        test.skip(!!process.env.CI, 'Registration on production is blocked by Google reCAPTCHA on CI runners');
+
         await test.step('Check Password Visibility Toggle', async () => {
             await registrationPage.checkPasswordVisibilityToggle();
         })

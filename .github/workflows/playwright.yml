@@ -1,38 +1,165 @@
 name: Playwright Tests
+
 on:
   push:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
+
 jobs:
   test:
-    timeout-minutes: 60
+    name: Run Playwright Tests
+    timeout-minutes: 30
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: lts/*
-    - name: Install dependencies
-      run: npm ci
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
-    - name: Run Playwright tests
-      env:
-        LOGIN_EMAIL: ${{ vars.LOGIN_EMAIL }}
-        LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
-        REGISTRATION_EMAIL: ${{ vars.REGISTRATION_EMAIL }}
-        REGISTRATION_FIRST_NAME: ${{ vars.REGISTRATION_FIRST_NAME }}
-        REGISTRATION_LAST_NAME: ${{ vars.REGISTRATION_LAST_NAME }}
-        REGISTRATION_PASSWORD: ${{ secrets.REGISTRATION_PASSWORD }}
-        REGISTRATION_REPEAT_PASSWORD: ${{ secrets.REGISTRATION_REPEAT_PASSWORD }}
-        API_USERNAME: ${{ vars.API_USERNAME }}
-        API_PASSWORD: ${{ secrets.API_PASSWORD }}
-      run: npx playwright test
-    - uses: actions/upload-artifact@v4
-      if: ${{ !cancelled() }}
-      with:
-        name: playwright-report
-        path: playwright-report/
-        retention-days: 30
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        id: playwright
+        env:
+          CI: true
+          LOGIN_EMAIL: ${{ vars.LOGIN_EMAIL }}
+          LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
+          REGISTRATION_EMAIL: ${{ vars.REGISTRATION_EMAIL }}
+          REGISTRATION_FIRST_NAME: ${{ vars.REGISTRATION_FIRST_NAME }}
+          REGISTRATION_LAST_NAME: ${{ vars.REGISTRATION_LAST_NAME }}
+          REGISTRATION_PASSWORD: ${{ secrets.REGISTRATION_PASSWORD }}
+          REGISTRATION_REPEAT_PASSWORD: ${{ secrets.REGISTRATION_REPEAT_PASSWORD }}
+          API_USERNAME: ${{ vars.API_USERNAME }}
+          API_PASSWORD: ${{ secrets.API_PASSWORD }}
+        run: npx playwright test
+
+      - name: Upload Playwright HTML Report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Upload Allure Results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: allure-results/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Send Slack notification
+        if: always()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL || vars.SLACK_WEBHOOK_URL }}
+          JOB_STATUS: ${{ job.status }}
+          REPOSITORY: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+          EVENT_NAME: ${{ github.event_name }}
+          ACTOR: ${{ github.actor }}
+          RUN_ID: ${{ github.run_id }}
+          SERVER_URL: ${{ github.server_url }}
+          COMMIT_SHA: ${{ github.sha }}
+          COMMIT_MSG: ${{ github.event.head_commit.message || github.event.pull_request.title || '' }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "⚠️ SLACK_WEBHOOK_URL secret is not configured. Skipping Slack notification."
+            exit 0
+          fi
+
+          python3 - <<'PY'
+          import os
+          import json
+          import urllib.request
+
+          status = os.environ.get("JOB_STATUS", "unknown")
+          repo = os.environ.get("REPOSITORY", "")
+          branch = os.environ.get("BRANCH", "")
+          actor = os.environ.get("ACTOR", "")
+          server_url = os.environ.get("SERVER_URL", "https://github.com")
+          run_id = os.environ.get("RUN_ID", "")
+          run_url = f"{server_url}/{repo}/actions/runs/{run_id}"
+          event = os.environ.get("EVENT_NAME", "")
+          commit_sha = os.environ.get("COMMIT_SHA", "")[:7]
+          raw_msg = os.environ.get("COMMIT_MSG", "").strip().split("\n")[0]
+          commit_msg = (raw_msg[:57] + "...") if len(raw_msg) > 60 else raw_msg
+
+          if status == "success":
+              color = "#2eb886"
+              icon = "✅"
+              title_status = "PASSED"
+          elif status == "failure":
+              color = "#a30200"
+              icon = "❌"
+              title_status = "FAILED"
+          else:
+              color = "#e3a21a"
+              icon = "⚠️"
+              title_status = status.upper()
+
+          header_text = f"{icon} Playwright Tests {title_status}"
+          fields = [
+              {"type": "mrkdwn", "text": f"*Repository:*\n<{server_url}/{repo}|{repo}>"},
+              {"type": "mrkdwn", "text": f"*Branch / Trigger:*\n`{branch}` ({event})"},
+              {"type": "mrkdwn", "text": f"*Triggered by:*\n@{actor}"},
+          ]
+          if commit_msg:
+              fields.append({"type": "mrkdwn", "text": f"*Commit:*\n`{commit_sha}` {commit_msg}"})
+          else:
+              fields.append({"type": "mrkdwn", "text": f"*Commit:*\n`{commit_sha}`"})
+
+          payload = {
+              "text": f"{header_text} in {repo} on `{branch}`",
+              "attachments": [
+                  {
+                      "color": color,
+                      "blocks": [
+                          {
+                              "type": "header",
+                              "text": {"type": "plain_text", "text": header_text, "emoji": True}
+                          },
+                          {
+                              "type": "section",
+                              "fields": fields
+                          },
+                          {
+                              "type": "context",
+                              "elements": [
+                                  {
+                                      "type": "mrkdwn",
+                                      "text": f"🔗 <{run_url}|View Workflow Run & Artifacts>"
+                                  }
+                              ]
+                          }
+                      ]
+                  }
+              ]
+          }
+
+          req = urllib.request.Request(
+              os.environ["SLACK_WEBHOOK_URL"],
+              data=json.dumps(payload).encode("utf-8"),
+              headers={"Content-Type": "application/json"},
+              method="POST"
+          )
+
+          try:
+              with urllib.request.urlopen(req, timeout=15) as response:
+                  print(f"Slack notification sent successfully (HTTP {response.status}).")
+          except Exception as e:
+              print(f"Error sending Slack notification: {e}")
+          PY

@@ -1,8 +1,9 @@
 import { expect, Locator, Page } from '@playwright/test'
+import { BaseActions } from '../config/BaseActions';
 
-export class HomePage {
+export class HomePage extends BaseActions {
 
-    readonly page: Page;
+    // readonly page: Page;
 
     readonly comingEventLink: Locator;
 
@@ -23,7 +24,8 @@ export class HomePage {
 
     constructor(page: Page) {
 
-        this.page = page;
+        //this.page = page;
+        super(page);
 
         this.comingEventLink = page.locator('h2.uk-card-title');
 
@@ -68,11 +70,13 @@ export class HomePage {
     }
 
     async checkUpcomingEventsTitle() {
-        await expect(this.upcomingEventsTitle).toBeVisible();
+        //await expect(this.upcomingEventsTitle).toBeVisible(); Старый вариант без использования универсального метода из BaseActions.ts
+        await this.checkIsVisible(this.upcomingEventsTitle, 'Check upcoming event title is visible'); //Новый вариант с использованием универсального метода из BaseActions.ts
     }
 
     async checkEventsGrid() {
-        await expect(this.eventsGrid).toBeVisible();
+        //await expect(this.eventsGrid).toBeVisible();
+        await this.
     }
 
     async clickEventCard() {

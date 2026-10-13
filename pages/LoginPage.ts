@@ -1,14 +1,13 @@
 import { expect, Locator, Page } from '@playwright/test';
 import { Header } from './components/Header';
+import { BaseActions } from '../config/BaseActions';
 
 export interface LoginData {
     email: string;
     password: string;
 }
 
-export class LoginPage {
-
-    readonly page: Page;
+export class LoginPage extends BaseActions {
 
     readonly header: Header;
 
@@ -40,7 +39,8 @@ export class LoginPage {
 
     constructor(page: Page) {
 
-        this.page = page;
+        //this.page = page;
+        super(page);
 
         this.signInTitle = page.locator('h2', { hasText: 'Sign in' });
 
@@ -82,8 +82,10 @@ export class LoginPage {
     }
 
     async login(data: LoginData): Promise<void> {
-        await this.emailField.fill(data.email);
-        await this.passwordField.fill(data.password);
+        //await this.emailField.fill(data.email);
+        await this.fill(this.emailField, data.email, 'Fill password field');
+        //await this.passwordField.fill(data.password);
+        await this.fill(this.passwordField, data.password, 'Fill password field');
         await expect(this.emailField).toHaveValue(data.email);
         await expect(this.passwordField).toHaveValue(data.password);
     }

@@ -1,8 +1,9 @@
 import { expect, Locator, Page } from '@playwright/test';
+import { BaseActions } from '../../config/BaseActions';
 
-export class Header {
+export class Header extends BaseActions {
 
-    readonly page: Page;
+    // readonly page: Page;
 
     readonly logo: Locator;
 
@@ -36,7 +37,9 @@ export class Header {
 
     constructor(page: Page) {
 
-        this.page = page;
+        //this.page = page;
+
+        super(page);
 
         this.logo = page.locator('.uk-logo');
 
@@ -75,10 +78,9 @@ export class Header {
     }
 
     async clickLogo() {
-        await this.logo.click();
+        await this.click(this.logo, 'Click on logo');
         await expect(this.page).toHaveURL('https://www.premieronline.com');
     }
-
 
     // Events link
     async verifyEventsLinkDisplaying() {

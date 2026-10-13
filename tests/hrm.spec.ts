@@ -47,11 +47,7 @@ test('адмін створює працівника, працівник лог�
   await passwordInputs.nth(1).fill(employee.password); // Confirm Password
  
   await adminPage.getByRole('button', { name: 'Save' }).click();
-  await expect(
-    adminPage.getByText('Successfully Saved')
-      .or(adminPage.locator('.oxd-toast'))
-      .or(adminPage.locator('text=Personal Details'))
-  ).toBeVisible({ timeout: 20000 });
+  await expect(adminPage.getByText('Successfully Saved').first()).toBeVisible({ timeout: 20000 });
  
   // Працівник логіниться у своїй сесії
   await login(employeePage, employee.username, employee.password);

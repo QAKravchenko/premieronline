@@ -14,3 +14,8 @@ node_modules/
 # Allure
 /allure-results/
 /allure-report/
+
+# Temporary & debug files
+*.html
+temp_*.txt
+temp*.txt

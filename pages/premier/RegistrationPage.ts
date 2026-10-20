@@ -1,6 +1,6 @@
-import { expect, Locator, Page } from '@playwright/test';
+import { Locator, Page } from '@playwright/test';
 import { Header } from './components/Header';
-import { BaseActions } from '../config/BaseActions';
+import { BaseActions } from '../../config/BaseActions';
 
 export interface RegistrationData {
     email: string;

@@ -1,4 +1,5 @@
 import { expect, Locator, Page } from '@playwright/test';
+import { BaseActions } from '../../config/BaseActions';
 
 export interface TableRecord {
   firstName: string;
@@ -9,8 +10,7 @@ export interface TableRecord {
   department: string;
 }
 
-export class WebTablesPage {
-  readonly page: Page;
+export class WebTablesPage extends BaseActions {
   readonly url: string = 'https://demoqa.com/webtables';
 
   // Locators
@@ -27,7 +27,7 @@ export class WebTablesPage {
   readonly tableRows: Locator;
 
   constructor(page: Page) {
-    this.page = page;
+    super(page);
 
     this.addNewRecordButton = page.locator('#addNewRecordButton');
     this.modalContent = page.locator('.modal-content');
@@ -43,42 +43,42 @@ export class WebTablesPage {
   }
 
   /**
-   * Открыть страницу Web Tables
+   * Navigate to Web Tables page
    */
   async open() {
-    await this.page.goto(this.url);
+    await this.goto(this.url);
   }
 
   /**
-   * Открыть модальную форму добавления записи
+   * Open the new record modal dialog
    */
   async openAddForm() {
-    await this.addNewRecordButton.click();
-    await expect(this.modalContent).toBeVisible();
+    await this.click(this.addNewRecordButton, 'Add New Record button');
+    await this.checkIsVisible(this.modalContent, 'Record Form Modal');
   }
 
   /**
-   * Заполнить поля формы
+   * Fill record form fields
    */
   async fillForm(data: Partial<TableRecord>) {
-    if (data.firstName !== undefined) await this.firstNameInput.fill(data.firstName);
-    if (data.lastName !== undefined) await this.lastNameInput.fill(data.lastName);
-    if (data.email !== undefined) await this.userEmailInput.fill(data.email);
-    if (data.age !== undefined) await this.ageInput.fill(data.age);
-    if (data.salary !== undefined) await this.salaryInput.fill(data.salary);
-    if (data.department !== undefined) await this.departmentInput.fill(data.department);
+    if (data.firstName !== undefined) await this.fill(this.firstNameInput, data.firstName, 'First Name input');
+    if (data.lastName !== undefined) await this.fill(this.lastNameInput, data.lastName, 'Last Name input');
+    if (data.email !== undefined) await this.fill(this.userEmailInput, data.email, 'User Email input');
+    if (data.age !== undefined) await this.fill(this.ageInput, data.age, 'Age input');
+    if (data.salary !== undefined) await this.fill(this.salaryInput, data.salary, 'Salary input');
+    if (data.department !== undefined) await this.fill(this.departmentInput, data.department, 'Department input');
   }
 
   /**
-   * Нажать Submit и дождаться закрытия модальной формы
+   * Submit form and verify modal closes
    */
   async submitForm() {
-    await this.submitButton.click();
+    await this.click(this.submitButton, 'Submit button');
     await expect(this.modalContent).toBeHidden();
   }
 
   /**
-   * Полный цикл создания записи (Create)
+   * Full creation lifecycle (Create)
    */
   async createRecord(record: TableRecord) {
     await this.openAddForm();
@@ -87,30 +87,31 @@ export class WebTablesPage {
   }
 
   /**
-   * Поиск по строке в таблице (Read / Filter)
+   * Search / filter table by query (Read)
    */
   async search(query: string) {
-    await this.searchBox.fill(query);
+    await this.fill(this.searchBox, query, 'Search box');
   }
 
   /**
-   * Получить локатор строки по email
+   * Get row locator by user email
    */
   getRowByEmail(email: string): Locator {
     return this.tableRows.filter({ hasText: email });
   }
 
   /**
-   * Открыть форму редактирования для записи с указанным email
+   * Open edit form for record with given email
    */
   async openEditForm(email: string) {
     const row = this.getRowByEmail(email);
-    await row.locator('[id^="edit-record-"]').click();
-    await expect(this.modalContent).toBeVisible();
+    const editButton = row.locator('[id^="edit-record-"]');
+    await this.click(editButton, `Edit button for ${email}`);
+    await this.checkIsVisible(this.modalContent, 'Record Form Modal');
   }
 
   /**
-   * Полный цикл редактирования записи (Update)
+   * Full record update lifecycle (Update)
    */
   async editRecord(email: string, updatedData: Partial<TableRecord>) {
     await this.openEditForm(email);
@@ -119,10 +120,11 @@ export class WebTablesPage {
   }
 
   /**
-   * Удалить запись по email (Delete)
+   * Delete record by email (Delete)
    */
   async deleteRecord(email: string) {
     const row = this.getRowByEmail(email);
-    await row.locator('[id^="delete-record-"]').click();
+    const deleteButton = row.locator('[id^="delete-record-"]');
+    await this.click(deleteButton, `Delete button for ${email}`);
   }
 }

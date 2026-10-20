@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { WebTablesPage, TableRecord } from '../pages/WebTablesPage';
+import { WebTablesPage, TableRecord } from '../../pages/demoqa/WebTablesPage';
 
 /**
  * CRUD tests for https://demoqa.com/webtables
@@ -10,7 +10,7 @@ import { WebTablesPage, TableRecord } from '../pages/WebTablesPage';
  *  - Update an existing record
  *  - Delete a record
  */
-test.describe('DemoQA Web Tables — полный CRUD над одной записью', () => {
+test.describe('DemoQA - Web Tables Record Lifecycle', () => {
   let webTablesPage: WebTablesPage;
 
   test.beforeEach(async ({ page }) => {
@@ -18,7 +18,7 @@ test.describe('DemoQA Web Tables — полный CRUD над одной зап�
     await webTablesPage.open();
   });
 
-  test('Create → Read → Update → Delete одной и той же записи', async () => {
+  test('should perform end-to-end CRUD lifecycle on a single table record', async () => {
     // ---------- CREATE ----------
     const original: TableRecord = {
       firstName: 'John',

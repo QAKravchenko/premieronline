@@ -1,6 +1,6 @@
 import { Locator, Page } from '@playwright/test';
 
-import { BaseActions } from '../config/BaseActions'; 
+import { BaseActions } from '../../config/BaseActions';
 
 
 export class AccountPage extends BaseActions {

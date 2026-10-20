@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { Header } from "../pages/components/Header";
-import { RegistrationPage } from "../pages/RegistrationPage";
-import { HomePage } from "../pages/HomePage";
-import { emailData, firstNameData, lastNameData, passwordData, repeatPasswordData, successfulMessage } from "../data/RegistrationData";
+import { Header } from "../../pages/premier/components/Header";
+import { RegistrationPage } from "../../pages/premier/RegistrationPage";
+import { HomePage } from "../../pages/premier/HomePage";
+import { emailData, firstNameData, lastNameData, passwordData, repeatPasswordData, successfulMessage, getFreshRegistrationData } from "../../data/premier/RegistrationData";
 
-test.describe('Check registration', () => {
+test.describe('Premier Online - User Registration', () => {
     let header: Header;
     let registrationPage: RegistrationPage;
     let homepage: HomePage;
@@ -17,7 +17,7 @@ test.describe('Check registration', () => {
         await expect(page).toHaveURL('https://www.premieronline.com/action/register');
     });
 
-    test('Check initial state of registration fields', async () => {
+    test('should display all mandatory registration input fields in initial state', async () => {
         await test.step('Verify all form fields are present', async () => {
             await registrationPage.checkEmailField();
             await registrationPage.checkFirstNameField();
@@ -27,35 +27,30 @@ test.describe('Check registration', () => {
         });
     });
 
-    test('POSITIVE - Check successful registration', async () => {
-        test.skip(!!process.env.CI, 'Registration on production is blocked by Google reCAPTCHA on CI runners');
+    test('should complete registration and display activation message with valid data', async () => {
+        test.skip(!process.env.RECAPTCHA_BYPASS_TOKEN, 'Automated registration on production is blocked by Google reCAPTCHA Enterprise unless RECAPTCHA_BYPASS_TOKEN is provided');
 
         await test.step('Check Password Visibility Toggle', async () => {
             await registrationPage.checkPasswordVisibilityToggle();
-        })
+        });
 
-        await test.step('Fill registration fields with valid data', async () => {
+        await test.step('Fill registration fields with valid data and submit', async () => {
+            const freshData = getFreshRegistrationData();
             await registrationPage.register({
-                email: emailData,
-                firstName: firstNameData,
-                lastName: lastNameData,
-                password: passwordData,
-                repeatPassword: repeatPasswordData
+                email: freshData.email,
+                firstName: freshData.firstName,
+                lastName: freshData.lastName,
+                password: freshData.password,
+                repeatPassword: freshData.repeatPassword
             });
-        })
-
-        await test.step('Click on Continue button', async () => {
-            await registrationPage.clickContinueButton();
         });
 
         await test.step('Check successful message', async () => {
             await registrationPage.checkSuccessfulRegistration(successfulMessage);
         });
-
-        // Дописать кейс на проверку аватарки и имени пользователя после успешной регистрации, если это возможно в рамках теста. И дописать тест на проверку наличия ссылки Sign out
     });
 
-    test('NEGATIVE - Check registration with empty fields', async () => {
+    test('should display validation error messages when submitting empty registration form', async () => {
         await test.step('Leave all registration fields empty and click on "Continue" button', async () => {
             await registrationPage.clickContinueButton();
         });
@@ -68,7 +63,7 @@ test.describe('Check registration', () => {
         });
     });
 
-    test('NEGATIVE - Check registration with invalid email', async () => {
+    test('should display validation error message when submitting malformed email address', async () => {
         await test.step('Fill registration fields with invalid email and click on "Continue" button', async () => {
             await registrationPage.register({
                 email: 'test@test',
@@ -84,7 +79,7 @@ test.describe('Check registration', () => {
         });
     });
 
-    test('NEGATIVE - Check registration with different passwords', async () => {
+    test('should display validation error message when password confirmation does not match', async () => {
         await test.step('Fill registration fields with different passwords and click on "Continue" button', async () => {
             await registrationPage.register({
                 email: emailData,
@@ -99,4 +94,4 @@ test.describe('Check registration', () => {
             await registrationPage.checkErrorMessageDifferentPasswords();
         });
     });
-});       
+});

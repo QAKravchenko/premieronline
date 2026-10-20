@@ -1,6 +1,6 @@
 import { APIRequestContext, APIResponse, expect } from '@playwright/test';
-import { Logger } from '../config/logger';
-import { apiConfig, ApiConfig } from '../data/ApiData';
+import { Logger } from '../../config/logger';
+import { apiConfig, ApiConfig } from '../../data/wordpress-api/ApiData';
 
 export interface PostData {
     title: string;

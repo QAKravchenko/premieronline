@@ -14,12 +14,14 @@ export function generateRegistrationData() {
     const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
     const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
     
-    // Используем Date.now() для создания уникального инкремента/значения, чтобы каждый тест получал новый email
-    const uniqueId = Date.now();
-    const email = `qakravchenko+${uniqueId}@gmail.com`;
+    // Используем Date.now() и случайное число для гарантированной уникальности
+    const uniqueId = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
+    const emailPrefix = process.env.REGISTRATION_EMAIL_PREFIX || 'autotest_user';
+    const emailDomain = process.env.REGISTRATION_EMAIL_DOMAIN || 'example.com';
+    const email = `${emailPrefix}_${uniqueId}@${emailDomain}`;
     
-    // Генерируем пароль, добавляя uniqueId для гарантии уникальности и соответствия требованиям
-    const password = `TestPass${uniqueId}`;
+    // Генерируем пароль, соответствующий требованиям сложности (буквы, цифры, спецсимвол)
+    const password = `TestPass_${uniqueId}!`;
     
     return {
         email,

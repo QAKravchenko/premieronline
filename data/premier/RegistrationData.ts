@@ -1,5 +1,13 @@
-import { generateRegistrationData } from '../helpers/DataGenerator';
+import { generateRegistrationData } from '../../helpers/premier/DataGenerator';
 import { registrationCredentials } from './Credentials';
+
+/**
+ * Функция генерации свежих уникальных данных регистрации для каждого теста.
+ * Предотвращает коллизии уникальности при параллельном запуске или ретраях тестов.
+ */
+export function getFreshRegistrationData() {
+    return generateRegistrationData();
+}
 
 const dynamicData = generateRegistrationData();
 

@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
-import { PostsApiPage } from '../pages/PostsApiPage';
-import { Logger } from '../config/logger';
+import { PostsApiPage } from '../../pages/wordpress-api/PostsApiPage';
+import { Logger } from '../../config/logger';
+import { comparePostIds } from '../../helpers/wordpress-api/ApiHelper';
 import {
     defaultPostData,
     expectedPostData,
@@ -13,39 +14,7 @@ import {
     defaultPageData,
     fullPageData,
     invalidPageData
-} from '../data/ApiData';
-
-/**
- * Функція для порівняння ID нового створеного поста з попереднім ID.
- * Перевіряє, що номер нового ID більший за попередній (newPostId > previousPostId).
- *
- * @param newPostId - ID щойно створеного поста (number або string)
- * @param previousPostId - ID попереднього поста (number або string)
- * @returns boolean - true, якщо новий ID більший за попередній
- */
-export function comparePostIds(newPostId: number | string, previousPostId: number | string): boolean {
-    const currentId = Number(newPostId);
-    const prevId = Number(previousPostId);
-
-    expect(Number.isFinite(currentId), `Новий ID поста має бути валідним числом: ${newPostId}`).toBeTruthy();
-    expect(Number.isFinite(prevId), `Попередній ID поста має бути валідним числом: ${previousPostId}`).toBeTruthy();
-
-    const isGreater = currentId > prevId;
-    Logger.assertion(
-        `Перевірка автоінкременту ID: новий ID (${currentId}) більший за попередній ID (${prevId})`,
-        isGreater,
-        `Різниця: +${currentId - prevId}`
-    );
-
-    try {
-        expect(currentId).toBeGreaterThan(prevId);
-    } catch (error) {
-        Logger.error(`Помилка валідації ID: новий ID (${currentId}) не більший за попередній ID (${prevId})`, error);
-        throw error;
-    }
-
-    return isGreater;
-}
+} from '../../data/wordpress-api/ApiData';
 
 test.describe.serial('WordPress Posts API - CRUD Tests', () => {
     let postsApi: PostsApiPage;
@@ -64,7 +33,7 @@ test.describe.serial('WordPress Posts API - CRUD Tests', () => {
         Logger.testFinish(testInfo.title, testInfo.status);
     });
 
-    test('CREATE - Should create a new post', async () => {
+    test('should create a new draft post with default schema fields and 201 status', async () => {
         Logger.step('1. Create new post via POST request');
         const response = await postsApi.createPost(defaultPostData);
 
@@ -98,7 +67,7 @@ test.describe.serial('WordPress Posts API - CRUD Tests', () => {
         postsApi.checkPostTemplate(responseBody, expectedPostData.template);
     });
 
-    test('CREATE - Should verify new post ID is greater than previous post ID', async () => {
+    test('should verify auto-incremented post ID is strictly greater than previous post ID', async () => {
         let basePostId = createdPostId;
         let cleanupBasePost = false;
 
@@ -139,7 +108,7 @@ test.describe.serial('WordPress Posts API - CRUD Tests', () => {
         }
     });
 
-    test('READ - Should get all posts', async () => {
+    test('should retrieve posts collection with valid schema and pagination headers', async () => {
         const response = await postsApi.getAllPosts();
         postsApi.checkResponseOk(response);
         postsApi.checkResponseStatus(response, 200);
@@ -150,7 +119,7 @@ test.describe.serial('WordPress Posts API - CRUD Tests', () => {
         postsApi.checkPostStructure(posts[0]);
     });
 
-    test('READ - Should get a specific post by ID', async () => {
+    test('should retrieve single post by valid ID with expected attributes', async () => {
         const testPostId = createdPostId || 1;
         const response = await postsApi.getPostById(testPostId);
         postsApi.checkResponseOk(response);
@@ -162,7 +131,7 @@ test.describe.serial('WordPress Posts API - CRUD Tests', () => {
         expect(post).toHaveProperty('date');
     });
 
-    test('UPDATE - Should update an existing post', async () => {
+    test('should update existing post title and content via PUT request', async () => {
         test.skip(!createdPostId, 'No post created to update');
         const response = await postsApi.updatePost(createdPostId, updatePostData);
         postsApi.checkResponseOk(response);
@@ -174,7 +143,7 @@ test.describe.serial('WordPress Posts API - CRUD Tests', () => {
         postsApi.checkPostContentContains(updatedPost, 'updated');
     });
 
-    test('PATCH - Should partially update a post', async () => {
+    test('should partially update post title via PATCH request', async () => {
         test.skip(!createdPostId, 'No post created to patch');
         const response = await postsApi.patchPost(createdPostId, patchPostData);
         postsApi.checkResponseOk(response);
@@ -183,7 +152,7 @@ test.describe.serial('WordPress Posts API - CRUD Tests', () => {
         postsApi.checkPostTitle(patchedPost, patchPostData.title);
     });
 
-    test('DELETE - Should delete a post', async () => {
+    test('should permanently delete post and verify 404 on subsequent get', async () => {
         test.skip(!createdPostId, 'No post created to delete');
         const response = await postsApi.deletePost(createdPostId, { force: true });
         postsApi.checkResponseOk(response);
@@ -194,14 +163,14 @@ test.describe.serial('WordPress Posts API - CRUD Tests', () => {
         await postsApi.checkPostDeleted(createdPostId);
     });
 
-    test('Error Handling - Should return 404 for non-existent post', async () => {
+    test('should return 404 Not Found when requesting non-existent post ID', async () => {
         const response = await postsApi.getPostById(999999);
         postsApi.checkResponseStatus(response, 404);
         const errorBody = await response.json();
         expect(errorBody).toHaveProperty('code');
     });
 
-    test('Error Handling - Should return 401 for unauthorized create', async () => {
+    test('should return 401 Unauthorized when attempting to create post without auth', async () => {
         const postData = {
             title: 'Unauthorized Post',
             content: 'This should fail',
@@ -211,14 +180,14 @@ test.describe.serial('WordPress Posts API - CRUD Tests', () => {
         postsApi.checkResponseStatus(response, 401);
     });
 
-    test('Filtering - Should filter posts by status', async () => {
+    test('should filter posts collection by publish status', async () => {
         const response = await postsApi.getPostsByStatus('publish');
         postsApi.checkResponseOk(response);
         const posts = await response.json();
         postsApi.checkAllPostsHaveStatus(posts, 'publish');
     });
 
-    test('Pagination - Should respect per_page parameter', async () => {
+    test('should respect per_page limit when querying posts collection', async () => {
         const perPage = 5;
         const response = await postsApi.getPostsWithPagination(perPage);
         postsApi.checkResponseOk(response);
@@ -239,26 +208,70 @@ test.describe('WordPress Posts API - Validation Tests', () => {
         Logger.testFinish(testInfo.title, testInfo.status);
     });
 
-    test('NEGATIVE - Should validate required fields', async () => {
-        const invalidData = {
-            content: 'Content without title'
+    test('should allow creating post without explicit title and return 201 with empty rendered title', async () => {
+        Logger.step('1. Create post without title via POST request');
+        const postData = {
+            content: 'Post created without title for schema validation',
+            status: 'draft'
         };
-        const response = await postsApi.createPost(invalidData);
-        const body = await response.json();
-        Logger.info(`Validation response: ${JSON.stringify(body)}`);
+        const response = await postsApi.createPost(postData);
+        postsApi.checkResponseOk(response);
+        postsApi.checkResponseStatus(response, 201);
+
+        const post = await response.json();
+        try {
+            Logger.step('2. Verify post is created with empty title and expected content');
+            expect(post.id).toBeDefined();
+            expect(typeof post.id).toBe('number');
+            expect(post.title.raw).toBe('');
+            expect(post.title.rendered).toBe('');
+            expect(post.content.raw).toBe(postData.content);
+            expect(post.status).toBe('draft');
+            Logger.assertion('Post without title successfully created with empty rendered title', true);
+        } finally {
+            await postsApi.deletePostIfExists(post.id);
+        }
     });
 
-    test('NEGATIVE - Should handle special characters in title', async () => {
+    test('should reject post creation with invalid status enum with 400 rest_invalid_param', async () => {
+        Logger.step('1. Attempt to create post with invalid status');
+        const response = await postsApi.createPost({
+            title: 'Test with Invalid Status',
+            status: 'invalid_status_xyz'
+        });
+
+        Logger.step('2. Verify 400 Bad Request and rest_invalid_param code for status field');
+        await postsApi.checkResponseError(response, 400, 'rest_invalid_param', 'status');
+    });
+
+    test('should reject post creation without authorization with 401 rest_cannot_create', async () => {
+        Logger.step('1. Attempt to create post without auth credentials');
+        const response = await postsApi.createPost({
+            title: 'Unauthorized Post'
+        }, { auth: false });
+
+        Logger.step('2. Verify 401 Unauthorized status and rest_cannot_create code');
+        postsApi.checkResponseStatus(response, 401);
+        const error = await response.json();
+        expect(error.code).toBe('rest_cannot_create');
+        Logger.assertion('Request was rejected with 401 rest_cannot_create', true);
+    });
+
+    test('should escape special characters in post title to HTML entities in rendered output', async () => {
         const response = await postsApi.createPost(specialCharsPostData);
         postsApi.checkResponseOk(response);
+        postsApi.checkResponseStatus(response, 201);
         const post = await response.json();
-        // WordPress кодує спецсимволи в HTML-сутності (наприклад, & -> &#038;)
-        expect(post.title.rendered).toContain('&#038;');
-        Logger.assertion('Title rendered contains escaped HTML entity "&#038;"', true);
-        await postsApi.deletePostIfExists(post.id);
+        try {
+            // WordPress кодує спецсимволи в HTML-сутності (наприклад, & -> &#038;)
+            expect(post.title.rendered).toContain('&#038;');
+            Logger.assertion('Title rendered contains escaped HTML entity "&#038;"', true);
+        } finally {
+            await postsApi.deletePostIfExists(post.id);
+        }
     });
 
-    test('VALIDATION - comparePostIds function validates ID comparison correctly', () => {
+    test('should validate auto-increment logic correctly in comparePostIds helper', () => {
         Logger.step('1. Verify valid increment (new ID > previous ID)');
         expect(comparePostIds(25000, 24999)).toBe(true);
         expect(comparePostIds('25005', '25000')).toBe(true);
@@ -286,7 +299,7 @@ test.describe('WordPress Posts API - POST /posts Field Validation', () => {
         Logger.testFinish(testInfo.title, testInfo.status);
     });
 
-    test('POST - Should create post with all available fields populated', async () => {
+    test('should create post with all standard schema fields populated', async () => {
         Logger.step('1. Create post with all fields');
         const customSlug = `full-post-${Date.now()}`;
         const payload = {
@@ -311,7 +324,7 @@ test.describe('WordPress Posts API - POST /posts Field Validation', () => {
         postsApi.checkPostCategories(post, payload.categories);
     });
 
-    test('POST - Should support different valid post statuses', async () => {
+    test('should create posts with different valid statuses (draft, pending, private)', async () => {
         for (const status of ['draft', 'pending', 'private'] as const) {
             Logger.step(`Create post with status: "${status}"`);
             const response = await postsApi.createPost({
@@ -326,7 +339,7 @@ test.describe('WordPress Posts API - POST /posts Field Validation', () => {
         }
     });
 
-    test('POST - Should support different valid post formats', async () => {
+    test('should create posts with different valid formats (standard, aside, quote)', async () => {
         for (const format of ['standard', 'aside', 'quote'] as const) {
             Logger.step(`Create post with format: "${format}"`);
             const response = await postsApi.createPost({
@@ -342,7 +355,7 @@ test.describe('WordPress Posts API - POST /posts Field Validation', () => {
         }
     });
 
-    test('POST - Should create password-protected post', async () => {
+    test('should create password-protected post and verify protected content in view context', async () => {
         Logger.step('1. Create post with password');
         const response = await postsApi.createPost({
             title: 'Protected Post',
@@ -361,7 +374,7 @@ test.describe('WordPress Posts API - POST /posts Field Validation', () => {
         Logger.assertion('Post content is protected', viewBody.content.protected);
     });
 
-    test('POST - Should create post with custom publication date', async () => {
+    test('should create post with custom publication date preserving ISO timestamp', async () => {
         Logger.step('1. Create post with custom ISO date');
         const customDate = '2026-09-01T12:00:00';
         const response = await postsApi.createPost({
@@ -378,37 +391,37 @@ test.describe('WordPress Posts API - POST /posts Field Validation', () => {
     });
 
     // NEGATIVE TESTS FOR POST /posts
-    test('NEGATIVE POST - Should reject invalid status enum (400 rest_invalid_param)', async () => {
+    test('should reject post creation with invalid status enum with 400 rest_invalid_param', async () => {
         const response = await postsApi.createPost(invalidPostData.invalidStatus);
         await postsApi.checkResponseError(response, 400, 'rest_invalid_param', 'status');
     });
 
-    test('NEGATIVE POST - Should reject invalid author ID (400 rest_invalid_author)', async () => {
+    test('should reject post creation with invalid author ID with 400 rest_invalid_author', async () => {
         const response = await postsApi.createPost(invalidPostData.invalidAuthor);
         await postsApi.checkResponseError(response, 400, 'rest_invalid_author');
     });
 
-    test('NEGATIVE POST - Should reject invalid comment_status enum (400 rest_invalid_param)', async () => {
+    test('should reject post creation with invalid comment_status enum with 400 rest_invalid_param', async () => {
         const response = await postsApi.createPost(invalidPostData.invalidCommentStatus);
         await postsApi.checkResponseError(response, 400, 'rest_invalid_param', 'comment_status');
     });
 
-    test('NEGATIVE POST - Should reject invalid ping_status enum (400 rest_invalid_param)', async () => {
+    test('should reject post creation with invalid ping_status enum with 400 rest_invalid_param', async () => {
         const response = await postsApi.createPost(invalidPostData.invalidPingStatus);
         await postsApi.checkResponseError(response, 400, 'rest_invalid_param', 'ping_status');
     });
 
-    test('NEGATIVE POST - Should reject invalid format enum (400 rest_invalid_param)', async () => {
+    test('should reject post creation with invalid format enum with 400 rest_invalid_param', async () => {
         const response = await postsApi.createPost(invalidPostData.invalidFormat);
         await postsApi.checkResponseError(response, 400, 'rest_invalid_param', 'format');
     });
 
-    test('NEGATIVE POST - Should reject non-boolean sticky value (400 rest_invalid_param)', async () => {
+    test('should reject post creation with non-boolean sticky value with 400 rest_invalid_param', async () => {
         const response = await postsApi.createPost(invalidPostData.invalidSticky);
         await postsApi.checkResponseError(response, 400, 'rest_invalid_param', 'sticky');
     });
 
-    test('NEGATIVE POST - Should reject invalid date format (400 rest_invalid_param)', async () => {
+    test('should reject post creation with malformed date string with 400 rest_invalid_param', async () => {
         const response = await postsApi.createPost(invalidPostData.invalidDate);
         await postsApi.checkResponseError(response, 400, 'rest_invalid_param', 'date');
     });
@@ -426,7 +439,7 @@ test.describe('WordPress Posts API - GET /posts Query Parameters Validation', ()
         Logger.testFinish(testInfo.title, testInfo.status);
     });
 
-    test('GET - Should filter posts by search keyword', async () => {
+    test('should filter posts collection by search keyword', async () => {
         const keyword = 'Ecommerce';
         const response = await postsApi.getAllPosts({ search: keyword, per_page: 5 });
         postsApi.checkResponseOk(response);
@@ -435,7 +448,7 @@ test.describe('WordPress Posts API - GET /posts Query Parameters Validation', ()
         Logger.assertion(`Search returned ${posts.length} posts matching "${keyword}"`, true);
     });
 
-    test('GET - Should sort posts by orderby and order (id asc/desc)', async () => {
+    test('should sort posts collection by id in ascending and descending order', async () => {
         Logger.step('1. Fetch posts ordered by ID desc');
         const descResponse = await postsApi.getAllPosts({ per_page: 5, orderby: 'id', order: 'desc' });
         postsApi.checkResponseOk(descResponse);
@@ -449,7 +462,7 @@ test.describe('WordPress Posts API - GET /posts Query Parameters Validation', ()
         postsApi.checkItemsSorted(ascPosts, 'id', 'asc');
     });
 
-    test('GET - Should filter posts by include and exclude IDs', async () => {
+    test('should filter posts collection using include and exclude ID parameters', async () => {
         const listResponse = await postsApi.getAllPosts({ per_page: 3 });
         const list = await listResponse.json();
         if (list.length >= 2) {
@@ -470,7 +483,7 @@ test.describe('WordPress Posts API - GET /posts Query Parameters Validation', ()
         }
     });
 
-    test('GET - Should return different fields based on context parameter', async () => {
+    test('should return schema-appropriate fields based on context parameter (view, embed, edit)', async () => {
         Logger.step('1. Context = view (default, rendered fields only)');
         const viewRes = await postsApi.getAllPosts({ per_page: 1, context: 'view' });
         const viewPosts = await viewRes.json();
@@ -494,27 +507,27 @@ test.describe('WordPress Posts API - GET /posts Query Parameters Validation', ()
     });
 
     // NEGATIVE TESTS FOR GET /posts
-    test('NEGATIVE GET - Should reject per_page exceeding 100 (400 rest_invalid_param)', async () => {
+    test('should reject per_page parameter exceeding maximum 100 with 400 rest_invalid_param', async () => {
         const response = await postsApi.getAllPosts({ per_page: 101 });
         await postsApi.checkResponseError(response, 400, 'rest_invalid_param', 'per_page');
     });
 
-    test('NEGATIVE GET - Should reject negative or zero per_page (400 rest_invalid_param)', async () => {
+    test('should reject non-positive per_page parameter with 400 rest_invalid_param', async () => {
         const response = await postsApi.getAllPosts({ per_page: -1 });
         await postsApi.checkResponseError(response, 400, 'rest_invalid_param', 'per_page');
     });
 
-    test('NEGATIVE GET - Should reject page number exceeding total pages (400 rest_post_invalid_page_number)', async () => {
+    test('should reject page number exceeding total available pages with 400 rest_post_invalid_page_number', async () => {
         const response = await postsApi.getAllPosts({ page: 999999 });
         await postsApi.checkResponseError(response, 400, 'rest_post_invalid_page_number');
     });
 
-    test('NEGATIVE GET - Should reject invalid order value (400 rest_invalid_param)', async () => {
+    test('should reject invalid order sorting value with 400 rest_invalid_param', async () => {
         const response = await postsApi.getAllPosts({ order: 'invalid_order' as any });
         await postsApi.checkResponseError(response, 400, 'rest_invalid_param', 'order');
     });
 
-    test('NEGATIVE GET - Should reject invalid orderby value (400 rest_invalid_param)', async () => {
+    test('should reject invalid orderby property with 400 rest_invalid_param', async () => {
         const response = await postsApi.getAllPosts({ orderby: 'invalid_orderby' as any });
         await postsApi.checkResponseError(response, 400, 'rest_invalid_param', 'orderby');
     });
@@ -541,7 +554,7 @@ test.describe('WordPress Posts API - Single Post & Update & Delete Lifecycle', (
         Logger.testFinish(testInfo.title, testInfo.status);
     });
 
-    test('GET {id} - Should retrieve post in edit context with raw and rendered fields', async () => {
+    test('should retrieve single post in edit context containing raw and rendered fields', async () => {
         const response = await postsApi.getPostWithContext(testPostId, 'edit');
         postsApi.checkResponseOk(response);
         const post = await response.json();
@@ -549,17 +562,17 @@ test.describe('WordPress Posts API - Single Post & Update & Delete Lifecycle', (
         postsApi.checkContextFields(post, 'edit');
     });
 
-    test('NEGATIVE GET {id} - Should return 404 for non-existent post ID', async () => {
+    test('should return 404 Not Found when requesting non-existent post ID', async () => {
         const response = await postsApi.getPostById(999999);
         await postsApi.checkResponseError(response, 404, 'rest_post_invalid_id');
     });
 
-    test('NEGATIVE GET {id} - Should return 404 for invalid string post ID', async () => {
+    test('should return 404 Not Found when requesting invalid non-numeric post ID', async () => {
         const response = await postsApi.getPostById('non-numeric-id');
         postsApi.checkResponseStatus(response, 404);
     });
 
-    test('PUT {id} - Should update multiple fields at once', async () => {
+    test('should update multiple post fields simultaneously via PUT request', async () => {
         const updatedData = {
             title: 'Completely Updated Title',
             content: 'Completely updated content body',
@@ -578,7 +591,7 @@ test.describe('WordPress Posts API - Single Post & Update & Delete Lifecycle', (
         postsApi.checkPostPingStatus(body, updatedData.ping_status);
     });
 
-    test('PATCH {id} - Should update individual fields independently', async () => {
+    test('should partially update post fields independently via PATCH request', async () => {
         Logger.step('1. Patch title only');
         const titlePatch = await postsApi.patchPost(testPostId, { title: 'Patched Single Title' });
         postsApi.checkResponseOk(titlePatch);
@@ -592,22 +605,22 @@ test.describe('WordPress Posts API - Single Post & Update & Delete Lifecycle', (
         postsApi.checkPostCommentStatus(commentBody, 'closed');
     });
 
-    test('NEGATIVE PUT {id} - Should reject invalid status on update (400 rest_invalid_param)', async () => {
+    test('should reject post update with invalid status returning 400 rest_invalid_param', async () => {
         const response = await postsApi.updatePost(testPostId, { status: 'invalid_status_xyz' });
         await postsApi.checkResponseError(response, 400, 'rest_invalid_param', 'status');
     });
 
-    test('NEGATIVE PUT {id} - Should return 404 when updating non-existent post', async () => {
+    test('should return 404 Not Found when attempting to update non-existent post', async () => {
         const response = await postsApi.updatePost(999999, { title: 'Updating ghost post' });
         await postsApi.checkResponseError(response, 404, 'rest_post_invalid_id');
     });
 
-    test('NEGATIVE PUT {id} - Should return 401 when updating without auth', async () => {
+    test('should return 401 Unauthorized when attempting to update post without authentication', async () => {
         const response = await postsApi.updatePost(testPostId, { title: 'Unauthorized' }, { auth: false });
         postsApi.checkResponseStatus(response, 401);
     });
 
-    test('DELETE {id} - Should soft delete post to trash (force=false)', async () => {
+    test('should move post to trash on soft delete with force=false', async () => {
         Logger.step('1. Move post to trash');
         const trashResponse = await postsApi.trashPost(testPostId);
         postsApi.checkResponseOk(trashResponse);
@@ -622,7 +635,7 @@ test.describe('WordPress Posts API - Single Post & Update & Delete Lifecycle', (
         testPostId = 0;
     });
 
-    test('DELETE {id} - Should permanently delete post directly (force=true)', async () => {
+    test('should permanently delete post directly from database with force=true', async () => {
         const deleteResponse = await postsApi.forceDeletePost(testPostId);
         postsApi.checkResponseOk(deleteResponse);
         const deleteBody = await deleteResponse.json();
@@ -631,12 +644,12 @@ test.describe('WordPress Posts API - Single Post & Update & Delete Lifecycle', (
         testPostId = 0;
     });
 
-    test('NEGATIVE DELETE {id} - Should return 404 when deleting non-existent post', async () => {
+    test('should return 404 Not Found when attempting to delete non-existent post', async () => {
         const response = await postsApi.forceDeletePost(999999);
         await postsApi.checkResponseError(response, 404, 'rest_post_invalid_id');
     });
 
-    test('NEGATIVE DELETE {id} - Should return 401 when deleting without auth', async () => {
+    test('should return 401 Unauthorized when attempting to delete post without authentication', async () => {
         const response = await postsApi.deletePost(testPostId, { auth: false });
         postsApi.checkResponseStatus(response, 401);
     });
@@ -659,7 +672,7 @@ test.describe('WordPress Pages API - CRUD & Field Validation Tests', () => {
         Logger.testFinish(testInfo.title, testInfo.status);
     });
 
-    test('POST - Should create page with all available fields populated', async () => {
+    test('should create page with all available fields populated', async () => {
         Logger.step('1. Create page with all fields (title, content, excerpt, status, slug, comment_status, ping_status, menu_order)');
         const customSlug = `full-page-${Date.now()}`;
         const payload = {
@@ -682,7 +695,7 @@ test.describe('WordPress Pages API - CRUD & Field Validation Tests', () => {
         pagesApi.checkPageMenuOrder(page, payload.menu_order);
     });
 
-    test('POST - Should support different valid page statuses', async () => {
+    test('should create pages supporting different valid statuses (draft, pending, private)', async () => {
         for (const status of ['draft', 'pending', 'private'] as const) {
             Logger.step(`Create page with status: "${status}"`);
             const response = await pagesApi.createPage({
@@ -697,7 +710,7 @@ test.describe('WordPress Pages API - CRUD & Field Validation Tests', () => {
         }
     });
 
-    test('GET - Should retrieve page by ID in view and edit context', async () => {
+    test('should retrieve page by ID in view and edit context representations', async () => {
         Logger.step('1. Create test page');
         const pageId = await pagesApi.createPageAndGetId({
             title: `Context Page ${Date.now()}`,
@@ -719,7 +732,7 @@ test.describe('WordPress Pages API - CRUD & Field Validation Tests', () => {
         pagesApi.checkContextFields(editBody, 'edit');
     });
 
-    test('GET - Should list pages with pagination and sorting by menu_order', async () => {
+    test('should list pages collection with pagination and sorting by menu_order', async () => {
         Logger.step('1. Fetch pages with per_page limit');
         const response = await pagesApi.getAllPages({ per_page: 3, orderby: 'menu_order', order: 'asc' });
         pagesApi.checkResponseOk(response);
@@ -728,7 +741,7 @@ test.describe('WordPress Pages API - CRUD & Field Validation Tests', () => {
         pagesApi.checkPostsCountLessThanOrEqual(pages, 3);
     });
 
-    test('PUT - Should update multiple fields on existing page', async () => {
+    test('should update multiple fields on existing page via PUT request', async () => {
         Logger.step('1. Create page to update');
         const pageId = await pagesApi.createPageAndGetId({
             title: 'Initial Page Title',
@@ -752,7 +765,7 @@ test.describe('WordPress Pages API - CRUD & Field Validation Tests', () => {
         pagesApi.checkPageMenuOrder(updatedPage, 25);
     });
 
-    test('PATCH - Should partially update page fields', async () => {
+    test('should partially update page comment_status via PATCH request', async () => {
         Logger.step('1. Create page for patch');
         const pageId = await pagesApi.createPageAndGetId({
             title: 'Page Before Patch',
@@ -769,7 +782,7 @@ test.describe('WordPress Pages API - CRUD & Field Validation Tests', () => {
         pagesApi.checkPostTitle(patchedPage, 'Page Before Patch');
     });
 
-    test('DELETE - Should soft delete page to trash (force=false)', async () => {
+    test('should soft delete page to trash with force=false', async () => {
         Logger.step('1. Create page to trash');
         const pageId = await pagesApi.createPageAndGetId({
             title: 'Page to Trash',
@@ -789,7 +802,7 @@ test.describe('WordPress Pages API - CRUD & Field Validation Tests', () => {
         pagesApi.checkItemPermanentlyDeleted(forceBody);
     });
 
-    test('DELETE - Should permanently delete page directly (force=true)', async () => {
+    test('should permanently delete page directly from database with force=true', async () => {
         Logger.step('1. Create page for permanent delete');
         const pageId = await pagesApi.createPageAndGetId({
             title: 'Page to Force Delete',
@@ -808,37 +821,37 @@ test.describe('WordPress Pages API - CRUD & Field Validation Tests', () => {
     });
 
     // NEGATIVE TESTS FOR PAGES
-    test('NEGATIVE POST - Should reject invalid status enum (400 rest_invalid_param)', async () => {
+    test('should reject page creation with invalid status returning 400 rest_invalid_param', async () => {
         const response = await pagesApi.createPage(invalidPageData.invalidStatus);
         await pagesApi.checkResponseError(response, 400, 'rest_invalid_param', 'status');
     });
 
-    test('NEGATIVE POST - Should reject invalid author ID (400 rest_invalid_author)', async () => {
+    test('should reject page creation with invalid author ID returning 400 rest_invalid_author', async () => {
         const response = await pagesApi.createPage(invalidPageData.invalidAuthor);
         await pagesApi.checkResponseError(response, 400, 'rest_invalid_author');
     });
 
-    test('NEGATIVE POST - Should reject non-integer menu_order (400 rest_invalid_param)', async () => {
+    test('should reject page creation with non-integer menu_order returning 400 rest_invalid_param', async () => {
         const response = await pagesApi.createPage(invalidPageData.invalidMenuOrder);
         await pagesApi.checkResponseError(response, 400, 'rest_invalid_param', 'menu_order');
     });
 
-    test('NEGATIVE GET - Should return 404 for non-existent page ID', async () => {
+    test('should return 404 Not Found when requesting non-existent page ID', async () => {
         const response = await pagesApi.getPageById(999999);
         await pagesApi.checkResponseError(response, 404, 'rest_post_invalid_id');
     });
 
-    test('NEGATIVE PUT - Should return 404 when updating non-existent page', async () => {
+    test('should return 404 Not Found when attempting to update non-existent page', async () => {
         const response = await pagesApi.updatePage(999999, { title: 'Ghost page' });
         await pagesApi.checkResponseError(response, 404, 'rest_post_invalid_id');
     });
 
-    test('NEGATIVE DELETE - Should return 404 when deleting non-existent page', async () => {
+    test('should return 404 Not Found when attempting to delete non-existent page', async () => {
         const response = await pagesApi.deletePage(999999);
         await pagesApi.checkResponseError(response, 404, 'rest_post_invalid_id');
     });
 
-    test('NEGATIVE - Should return 401 for unauthorized page create', async () => {
+    test('should return 401 Unauthorized when attempting to create page without authentication', async () => {
         const response = await pagesApi.createPage({ title: 'Unauthorized' }, { auth: false });
         pagesApi.checkResponseStatus(response, 401);
     });
@@ -856,15 +869,15 @@ test.describe('WordPress Posts API - Performance Tests', () => {
         Logger.testFinish(testInfo.title, testInfo.status);
     });
 
-    test('GET all posts - should respond within acceptable time', async () => {
+    test('should respond within acceptable SLA threshold when fetching all posts (<5000ms)', async () => {
         const { response, responseTime } = await postsApi.measureResponseTime(() => postsApi.getAllPosts());
         postsApi.checkResponseOk(response);
         console.log(`GET all posts response time: ${responseTime}ms`);
         postsApi.checkResponseTime(responseTime, 5000, 'GET all posts');
     });
 
-    test('GET single post - should respond within acceptable time', async () => {
-        // Отримуємо ID існуючого поста, щоб запит завжди був до валідної сутності
+    test('should respond within acceptable SLA threshold when fetching single post (<4000ms)', async () => {
+        // Retrieve existing post ID so request targets a valid entity
         const allPostsRes = await postsApi.getAllPosts({ per_page: 1 });
         const posts = await allPostsRes.json();
         const targetPostId = posts.length > 0 ? posts[0].id : await postsApi.createPostAndGetId(defaultPostData);
@@ -875,7 +888,7 @@ test.describe('WordPress Posts API - Performance Tests', () => {
         postsApi.checkResponseTime(responseTime, 4000, 'GET single post');
     });
 
-    test('POST create post - should respond within acceptable time', async () => {
+    test('should respond within acceptable SLA threshold when creating post (<4000ms)', async () => {
         const { response, responseTime } = await postsApi.measureResponseTime(() => postsApi.createPost(performancePostData));
         postsApi.checkResponseOk(response);
         console.log(`POST create post response time: ${responseTime}ms`);
@@ -885,7 +898,7 @@ test.describe('WordPress Posts API - Performance Tests', () => {
         await postsApi.deletePostIfExists(post.id);
     });
 
-    test('PUT update post - should respond within acceptable time', async () => {
+    test('should respond within acceptable SLA threshold when updating post (<4000ms)', async () => {
         const postId = await postsApi.createPostAndGetId({
             title: 'Post to Update',
             content: 'Initial content',
@@ -902,7 +915,7 @@ test.describe('WordPress Posts API - Performance Tests', () => {
         await postsApi.deletePostIfExists(postId);
     });
 
-    test('DELETE post - should respond within acceptable time', async () => {
+    test('should respond within acceptable SLA threshold when deleting post (<3000ms)', async () => {
         const postId = await postsApi.createPostAndGetId({
             title: 'Post to Delete',
             content: 'Will be deleted',
@@ -915,7 +928,7 @@ test.describe('WordPress Posts API - Performance Tests', () => {
         postsApi.checkResponseTime(responseTime, 3000, 'DELETE post');
     });
 
-    test('Multiple concurrent GET requests - average response time', async () => {
+    test('should maintain acceptable average latency under concurrent GET requests (<4000ms)', async () => {
         const numberOfRequests = 3;
         const { responses, responseTimes, averageTime, minTime, maxTime } = await postsApi.runConcurrentGetRequests(numberOfRequests);
 
@@ -931,7 +944,7 @@ test.describe('WordPress Posts API - Performance Tests', () => {
         expect(averageTime).toBeLessThan(4000);
     });
 
-    test('Load test - Sequential requests performance', async () => {
+    test('should maintain acceptable average latency under sequential requests load (<3000ms)', async () => {
         const numberOfRequests = 10;
         const { totalTime, averageTime, requestsPerSecond } = await postsApi.runSequentialGetRequests(numberOfRequests, 5);
 
@@ -942,7 +955,7 @@ test.describe('WordPress Posts API - Performance Tests', () => {
         expect(averageTime).toBeLessThan(3000);
     });
 
-    test('Response time by pagination size', async () => {
+    test('should maintain acceptable latency across varying pagination sizes (<4000ms)', async () => {
         const pageSizes = [1, 5, 10, 20, 50];
         const results = await postsApi.measureResponseTimeByPageSizes(pageSizes);
 

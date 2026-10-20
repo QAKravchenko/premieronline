@@ -4,6 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "test": "playwright test",
+    "test:premier": "playwright test --project=premier",
+    "test:api": "playwright test --project=wordpress-api",
+    "test:demoqa": "playwright test --project=demoqa",
+    "test:orangehrm": "playwright test --project=orangehrm",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "typecheck": "tsc --noEmit",
     "allure:generate": "allure generate ./allure-results --clean -o ./allure-report",
     "allure:open": "allure open ./allure-report",
     "allure:serve": "allure serve ./allure-results"

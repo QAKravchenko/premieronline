@@ -1,12 +1,15 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
+ * Read environment variables from .env file using native Node.js loadEnvFile
  */
-// import dotenv from 'dotenv';
-// import path from 'path';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
+if (typeof (process as any).loadEnvFile === 'function') {
+  try {
+    (process as any).loadEnvFile();
+  } catch {
+    // .env does not exist (e.g. in CI), environment variables are provided by the system
+  }
+}
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -42,46 +45,42 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
 
-  /* Configure projects for major browsers */
+  /* Configure projects by application / domain */
   projects: [
     {
-      name: 'chromium',
+      name: 'premier',
+      testDir: './tests/premier',
       use: { 
         ...devices['Desktop Chrome'],
-        viewport: { width: 1920, height: 1080 }, 
+        viewport: { width: 1920, height: 1080 },
+        baseURL: 'https://www.premieronline.com',
       },
     },
-
-
-    /*{
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-
     {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },*/
-
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
-
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
+      name: 'wordpress-api',
+      testDir: './tests/wordpress-api',
+      use: {
+        baseURL: 'https://dev.emeli.in.ua/wp-json/wp/v2',
+      },
+    },
+    {
+      name: 'demoqa',
+      testDir: './tests/demoqa',
+      use: { 
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 },
+        baseURL: 'https://demoqa.com',
+      },
+    },
+    {
+      name: 'orangehrm',
+      testDir: './tests/orangehrm',
+      use: { 
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 },
+        baseURL: 'https://opensource-demo.orangehrmlive.com',
+      },
+    },
   ],
 
   /* Run your local dev server before starting the tests */

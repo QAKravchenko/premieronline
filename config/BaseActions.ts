@@ -11,8 +11,6 @@ export class BaseActions {
     async click(locator: Locator, actionDescription: string) {
         try {
             Logger.info(`Action: Click on ${actionDescription}`);
-            await expect(locator).toBeVisible();
-            await expect(locator).toBeEnabled();
             await locator.click();
             Logger.info(`Successfully clicked on ${actionDescription}`);
         } catch (error) {
@@ -24,8 +22,6 @@ export class BaseActions {
     async fill(locator: Locator, text: string, actionDescription: string) {
         try {
             Logger.info(`Action: Fill ${actionDescription} with value '${text}'`);
-            await expect(locator).toBeVisible();
-            await expect(locator).toBeEnabled();
             await locator.fill(text);
             Logger.info(`Successfully filled ${actionDescription}`);
         } catch (error) {
@@ -100,7 +96,7 @@ export class BaseActions {
         }
     }
 
-    async checkUrl(expectedUrl: string) {
+    async checkUrl(expectedUrl: string | RegExp) {
         try {
             Logger.info(`Check: Is page URL '${expectedUrl}'`);
             await expect(this.page).toHaveURL(expectedUrl);
@@ -111,5 +107,58 @@ export class BaseActions {
         }
     }
 
+    async hover(locator: Locator, actionDescription: string) {
+        try {
+            Logger.info(`Action: Hover over ${actionDescription}`);
+            await locator.hover();
+            Logger.info(`Successfully hovered over ${actionDescription}`);
+        } catch (error) {
+            Logger.error(`Failed to hover over ${actionDescription}`, error);
+            throw error;
+        }
+    }
 
+    async checkCSS(locator: Locator, cssProperty: string, cssValue: string | RegExp, elementDescription: string) {
+        try {
+            Logger.info(`Check: Does ${elementDescription} have CSS property '${cssProperty}'='${cssValue}'`);
+            await expect(locator).toHaveCSS(cssProperty, cssValue);
+            Logger.info(`${elementDescription} has expected CSS property '${cssProperty}'`);
+        } catch (error) {
+            Logger.error(`Failed to verify CSS property '${cssProperty}' for ${elementDescription}`, error);
+            throw error;
+        }
+    }
+
+    async pressSequentially(locator: Locator, text: string, actionDescription: string, delay: number = 100) {
+        try {
+            Logger.info(`Action: Press sequentially on ${actionDescription} with value '${text}'`);
+            await locator.pressSequentially(text, { delay });
+            Logger.info(`Successfully pressed sequentially on ${actionDescription}`);
+        } catch (error) {
+            Logger.error(`Failed to press sequentially on ${actionDescription}`, error);
+            throw error;
+        }
+    }
+
+    async goto(url: string, options?: { waitUntil?: 'load' | 'domcontentloaded' | 'networkidle' | 'commit'; timeout?: number }) {
+        try {
+            Logger.info(`Action: Navigate to URL '${url}'`);
+            await this.page.goto(url, { waitUntil: 'domcontentloaded', ...options });
+            Logger.info(`Successfully navigated to URL '${url}'`);
+        } catch (error) {
+            Logger.error(`Failed to navigate to URL '${url}'`, error);
+            throw error;
+        }
+    }
+
+    async checkTitle(expectedTitle: string | RegExp) {
+        try {
+            Logger.info(`Check: Does page title match '${expectedTitle}'`);
+            await expect(this.page).toHaveTitle(expectedTitle);
+            Logger.info(`Page title matches expected`);
+        } catch (error) {
+            Logger.error(`Failed to verify page title`, error);
+            throw error;
+        }
+    }
 }
